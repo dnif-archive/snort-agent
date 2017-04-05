@@ -45,7 +45,7 @@ sigmap = maps.SignatureMap()
 #Load gid & sid files from both SNORT and ET-Rules
 
 sigmap.load_generator_map(open("/etc/snort/gen-msg.map"))
-sigmap.load_signature_map(open("/etc/snort/sid-msg.map"))
+sigmap.load_signature_map(open("/etc/snort/rules/sid-msg.map"))
 
 #To check how many Signature-maps is loade uncomment below line
 logging.warning("[+] No. of Signature loaded = %s " %(sigmap.size()))
