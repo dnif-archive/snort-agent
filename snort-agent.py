@@ -69,17 +69,17 @@ updateduration = datetime.timedelta(hours=6)
 updatetime = nowtime + updateduration
 ####FOR ASN and City Info######
 
-repdict = {}
-try:
-    logging.info("Adultlist Start")
-    f = open("nsprofile/fddict.json",'r')
-    jj = f.readlines()
-    f.close()
-    repdict = json.loads(jj[0])
-    logging.info("Repdict Updated")
-except IOError,e:
-    logging.info("Repdict not Found")
-    repdict = {}
+#repdict = {}
+# try:
+#     logging.info("Adultlist Start")
+#     f = open("nsprofile/fddict.json",'r')
+#     jj = f.readlines()
+#     f.close()
+#     repdict = json.loads(jj[0])
+#     logging.info("Repdict Updated")
+# except IOError,e:
+#     logging.info("Repdict not Found")
+#     repdict = {}
 #Start IDSTool to read log :
 reader = unified2.SpoolEventReader("/var/log/snort", "snort.u2.*",follow=True,delete=False,bookmark=True)
 httplist = []
@@ -106,16 +106,16 @@ try:
             nowtimedom = datetime.datetime.now()
             updatedurationdom = datetime.timedelta(minutes=5)
             updatetimedom = nowtimedom + updatedurationdom
-            try:
-                logging.info("Adultlist Start")
-                f = open("dnsprofile/fddict.json",'r')
-                jj = f.readlines()
-                f.close()
-                repdict = json.loads(jj[0])
-                logging.info("Repdict Updated")
-            except IOError,e:
-                logging.info("Repdict not Found")
-                repdict = {}
+            # try:
+            #     logging.info("Adultlist Start")
+            #     f = open("dnsprofile/fddict.json",'r')
+            #     jj = f.readlines()
+            #     f.close()
+            #     repdict = json.loads(jj[0])
+            #     logging.info("Repdict Updated")
+            # except IOError,e:
+            #     logging.info("Repdict not Found")
+            #     repdict = {}
 
         dt_evt = {}
         if event['generator-id'] != 1 :
@@ -239,15 +239,16 @@ try:
                 dt_evt['DevSrcIP'] = DevSrcIP
             srcip = '.'.join(dt_evt['SrcIP'].split('.')[:3])
             dstip = '.'.join(dt_evt['DstIP'].split('.')[:3])
-            if (srcip in repdict.keys()) and (dstip in repdict.keys()):
-                dt_evt['Flow'] = 'Internal'
-            elif srcip in repdict.keys():
-                dt_evt['Flow'] = 'Egress'
-            elif dstip in repdict.keys():
-                dt_evt['Flow'] = 'Ingress'
-            else:
-                if len(repdict.keys()) > 0:
-                    dt_evt['Flow'] = 'Unknown'
+            dt_evt['Flow'] = "I"
+            # if (srcip in repdict.keys()) and (dstip in repdict.keys()):
+            #     dt_evt['Flow'] = 'Internal'
+            # elif srcip in repdict.keys():
+            #     dt_evt['Flow'] = 'Egress'
+            # elif dstip in repdict.keys():
+            #     dt_evt['Flow'] = 'Ingress'
+            # else:
+            #     if len(repdict.keys()) > 0:
+            #         dt_evt['Flow'] = 'Unknown'
 
             httplist.append(dt_evt)
             if 'PacketData' in dt_evt:
