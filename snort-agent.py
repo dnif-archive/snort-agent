@@ -33,7 +33,7 @@ dt_evt = {}
 
 classmap = maps.ClassificationMap()
 #Load Classidication.config from both SNORT and ET-Rules
-classmap.load_from_file(open("/etc/snort/classification.config"))
+classmap.load_from_file(open("/etc/snort/rules/classification.config"))
 
 #To check how many classification is loade uncomment below line
 logging.warning("[+] No. of classificaton loaded = %s " %(classmap.size()))
@@ -44,7 +44,7 @@ logging.warning("[+] No. of classificaton loaded = %s " %(classmap.size()))
 sigmap = maps.SignatureMap()
 #Load gid & sid files from both SNORT and ET-Rules
 
-sigmap.load_generator_map(open("/etc/snort/gen-msg.map"))
+sigmap.load_generator_map(open("/etc/snort/rules/gen-msg.map"))
 sigmap.load_signature_map(open("/etc/snort/rules/sid-msg.map"))
 
 #To check how many Signature-maps is loade uncomment below line
