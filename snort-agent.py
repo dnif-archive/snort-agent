@@ -5,24 +5,28 @@ from idstools import maps
 import sys
 import logging
 import time
-import os
+import sys, os
 import datetime
+import Pyro4
 import pygeoip
 import re
+import logging
+import redis
+import ast
+import json
 
-LOGFILE = "/var/log/snort-agent.log"
+LOGFILE = "/var/log/snort-agent-idstool.log"
 logging.basicConfig(filename=LOGFILE, level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
+r = redis.Redis()
+sysdata = r.hget('csltuconfig','system')
+sysconfig = ast.literal_eval(sysdata)
 
-try:  
-   ADIPv4 = os.environ["AD"]
-except KeyError: 
-   logging.error("Please specify IPv4 Address for the Adapter using -e AD=x.y.z.a")
-   sys.exit(1)
+pyrodata = r.hget('csltuconfig','Pyro')
+pyroconfig = ast.literal_eval(pyrodata)
+url = 'http://172.16.10.156:9234/json/receive'
 
-url = 'http://', ADIPv4, ':9234/json/receive'
-
-# DevSrcIP = sysconfig['localip']
+DevSrcIP = sysconfig['localip']
 
 #Deff :
 now_clock = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
@@ -33,41 +37,48 @@ dt_evt = {}
 
 classmap = maps.ClassificationMap()
 #Load Classidication.config from both SNORT and ET-Rules
+<<<<<<< HEAD
+classmap.load_from_file(open("/etc/snort/classification.config"))
+classmap.load_from_file(open("/etc/snort/etrules/classification.config"))
+=======
 classmap.load_from_file(open("/etc/snort/rules/classification.config"))
 
+>>>>>>> dnif/master
 #To check how many classification is loade uncomment below line
 logging.warning("[+] No. of classificaton loaded = %s " %(classmap.size()))
-
 # Set to go : Call using --> classmap.get(<ClassID>)
 #======== End of Classification init =============
 
 sigmap = maps.SignatureMap()
 #Load gid & sid files from both SNORT and ET-Rules
+<<<<<<< HEAD
+sigmap.load_generator_map(open("/etc/snort/gen-msg.map"))
+sigmap.load_generator_map(open("/etc/snort/etrules/gen-msg.map"))
+sigmap.load_signature_map(open("/etc/snort/sid-msg.map"))
+sigmap.load_signature_map(open("/etc/snort/etrules/sid-msg.map"))
+=======
 
 sigmap.load_generator_map(open("/etc/snort/rules/gen-msg.map"))
 sigmap.load_signature_map(open("/etc/snort/rules/sid-msg.map"))
 
+>>>>>>> dnif/master
 #To check how many Signature-maps is loade uncomment below line
 logging.warning("[+] No. of Signature loaded = %s " %(sigmap.size()))
 # Set to go : Call using --> classmap.get(<ClassID>)
 #======== End of Signature-map init =============
 
 #Init GEOIP data for IP details
-geo_lite_city = pygeoip.GeoIP('/usr/local/lookups/GeoLiteCity.dat')
-geo_ip_asn = pygeoip.GeoIP('/usr/local/lookups/GeoIPASNum.dat')
+geo_lite_city = pygeoip.GeoIP('GeoLiteCity.dat')
+geo_ip_asn = pygeoip.GeoIP('GeoIPASNum.dat')
 logging.warning('Loaded latest ASN and City info')
 
 nowtimedom = datetime.datetime.now()
 updatedurationdom = datetime.timedelta(minutes=5)
 updatetimedom = nowtimedom + updatedurationdom
-
 # FOR ASN and City Info
 nowtime = datetime.datetime.now()
 updateduration = datetime.timedelta(hours=6)
 updatetime = nowtime + updateduration
-####FOR ASN and City Info######
-
-#Start IDSTool to read log :
 reader = unified2.SpoolEventReader("/var/log/snort", "snort.u2.*",follow=True,delete=False,bookmark=True)
 httplist = []
 max_buffer_size=1024
@@ -80,8 +91,8 @@ try:
     for event in reader:
         if datetime.datetime.now() > updatetime:
             try:
-                geo_lite_city = pygeoip.GeoIP('/usr/local/lookups/GeoLiteCity.dat')
-                geo_ip_asn = pygeoip.GeoIP('/usr/local/lookups/GeoIPASNum.dat')
+                geo_lite_city = pygeoip.GeoIP('GeoLiteCity.dat')
+                geo_ip_asn = pygeoip.GeoIP('GeoIPASNum.dat')
                 logging.warning('Loaded latest ASN and City info')
             except Exception,e:
                 print e
@@ -93,7 +104,6 @@ try:
             nowtimedom = datetime.datetime.now()
             updatedurationdom = datetime.timedelta(minutes=5)
             updatetimedom = nowtimedom + updatedurationdom
-
         dt_evt = {}
         if event['generator-id'] != 1 :
             continue
@@ -206,14 +216,17 @@ try:
                 elif KEY == 'vlan-id' and VALUE != None :
                     dt_evt['VlanID'] = str(VALUE)
                 dt_evt['LogType'] = 'DPI'
-                dt_evt['LogName'] = 'SNORT'
-                # dt_evt['ScopeID'] = sysconfig['scopeid']
+                dt_evt['LogID'] = 45
+                dt_evt['PStatus'] = 'PAD'
+                dt_evt['LogName'] = 'NMSNORT'
+                dt_evt['ProductType'] = 'TM'
+                dt_evt['ScopeID'] = sysconfig['scopeid']
                 dt_evt['EvtLen'] = len(str(event))
                 dt_evt['CNAMTime'] = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
-                # dt_evt['DevSrcIP'] = DevSrcIP
+                dt_evt['DevSrcIP'] = DevSrcIP
             srcip = '.'.join(dt_evt['SrcIP'].split('.')[:3])
             dstip = '.'.join(dt_evt['DstIP'].split('.')[:3])
-
+            dt_evt['Flow'] = "I"
             httplist.append(dt_evt)
             if 'PacketData' in dt_evt:
                 dt_evt.pop('PacketData', None)
