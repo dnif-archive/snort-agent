@@ -9,18 +9,21 @@ import os
 import datetime
 import pygeoip
 import re
+import logging
+import redis
+import ast
+import json
 
 LOGFILE = "/var/log/snort-agent.log"
 logging.basicConfig(filename=LOGFILE, level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
-
-try:  
+try:
    ADIPv4 = os.environ["AD"]
-except KeyError: 
+except KeyError:
    logging.error("Please specify IPv4 Address for the Adapter using -e AD=x.y.z.a")
    sys.exit(1)
 
-url = 'http://', ADIPv4, ':9234/json/receive'
+url = 'http://' + ADIPv4 + ':9234/json/receive'
 
 # DevSrcIP = sysconfig['localip']
 
@@ -34,7 +37,6 @@ dt_evt = {}
 classmap = maps.ClassificationMap()
 #Load Classidication.config from both SNORT and ET-Rules
 classmap.load_from_file(open("/etc/snort/rules/classification.config"))
-
 #To check how many classification is loade uncomment below line
 logging.warning("[+] No. of classificaton loaded = %s " %(classmap.size()))
 
@@ -60,14 +62,10 @@ logging.warning('Loaded latest ASN and City info')
 nowtimedom = datetime.datetime.now()
 updatedurationdom = datetime.timedelta(minutes=5)
 updatetimedom = nowtimedom + updatedurationdom
-
 # FOR ASN and City Info
 nowtime = datetime.datetime.now()
 updateduration = datetime.timedelta(hours=6)
 updatetime = nowtime + updateduration
-####FOR ASN and City Info######
-
-#Start IDSTool to read log :
 reader = unified2.SpoolEventReader("/var/log/snort", "snort.u2.*",follow=True,delete=False,bookmark=True)
 httplist = []
 max_buffer_size=1024
@@ -80,8 +78,8 @@ try:
     for event in reader:
         if datetime.datetime.now() > updatetime:
             try:
-                geo_lite_city = pygeoip.GeoIP('/usr/local/lookups/GeoLiteCity.dat')
-                geo_ip_asn = pygeoip.GeoIP('/usr/local/lookups/GeoIPASNum.dat')
+                geo_lite_city = pygeoip.GeoIP('GeoLiteCity.dat')
+                geo_ip_asn = pygeoip.GeoIP('GeoIPASNum.dat')
                 logging.warning('Loaded latest ASN and City info')
             except Exception,e:
                 print e
@@ -93,7 +91,6 @@ try:
             nowtimedom = datetime.datetime.now()
             updatedurationdom = datetime.timedelta(minutes=5)
             updatetimedom = nowtimedom + updatedurationdom
-
         dt_evt = {}
         if event['generator-id'] != 1 :
             continue
@@ -206,20 +203,22 @@ try:
                 elif KEY == 'vlan-id' and VALUE != None :
                     dt_evt['VlanID'] = str(VALUE)
                 dt_evt['LogType'] = 'DPI'
-                dt_evt['LogName'] = 'SNORT'
-                # dt_evt['ScopeID'] = sysconfig['scopeid']
+                dt_evt['LogID'] = 45
+                dt_evt['PStatus'] = 'PAD'
+                dt_evt['LogName'] = 'NMSNORT'
+                dt_evt['ProductType'] = 'TM'
+                dt_evt['ScopeID'] = sysconfig['scopeid']
                 dt_evt['EvtLen'] = len(str(event))
                 dt_evt['CNAMTime'] = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
-                # dt_evt['DevSrcIP'] = DevSrcIP
+                dt_evt['DevSrcIP'] = DevSrcIP
             srcip = '.'.join(dt_evt['SrcIP'].split('.')[:3])
             dstip = '.'.join(dt_evt['DstIP'].split('.')[:3])
-
+            dt_evt['Flow'] = "I"
             httplist.append(dt_evt)
             if 'PacketData' in dt_evt:
                 dt_evt.pop('PacketData', None)
             logging.warning('%s' %dt_evt)
-            rpr = dlog.log(dt_evt)
-            print rpr
+            #rpr = dlog.log(dt_evt)
             if (datetime.datetime.now() > endtime) or (len(httplist) > 15000):
                 nowtime = datetime.datetime.now()
                 timeduration = datetime.timedelta(seconds=5)
