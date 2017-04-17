@@ -5,9 +5,8 @@ from idstools import maps
 import sys
 import logging
 import time
-import sys, os
+import os
 import datetime
-import Pyro4
 import pygeoip
 import re
 import logging
@@ -15,18 +14,18 @@ import redis
 import ast
 import json
 
-LOGFILE = "/var/log/snort-agent-idstool.log"
+LOGFILE = "/var/log/snort-agent.log"
 logging.basicConfig(filename=LOGFILE, level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
-r = redis.Redis()
-sysdata = r.hget('csltuconfig','system')
-sysconfig = ast.literal_eval(sysdata)
+try:
+   ADIPv4 = os.environ["AD"]
+except KeyError:
+   logging.error("Please specify IPv4 Address for the Adapter using -e AD=x.y.z.a")
+   sys.exit(1)
 
-pyrodata = r.hget('csltuconfig','Pyro')
-pyroconfig = ast.literal_eval(pyrodata)
-url = 'http://172.16.10.156:9234/json/receive'
+url = 'http://' + ADIPv4 + ':9234/json/receive'
 
-DevSrcIP = sysconfig['localip']
+# DevSrcIP = sysconfig['localip']
 
 #Deff :
 now_clock = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
@@ -37,39 +36,27 @@ dt_evt = {}
 
 classmap = maps.ClassificationMap()
 #Load Classidication.config from both SNORT and ET-Rules
-<<<<<<< HEAD
-classmap.load_from_file(open("/etc/snort/classification.config"))
-classmap.load_from_file(open("/etc/snort/etrules/classification.config"))
-=======
 classmap.load_from_file(open("/etc/snort/rules/classification.config"))
-
->>>>>>> dnif/master
 #To check how many classification is loade uncomment below line
 logging.warning("[+] No. of classificaton loaded = %s " %(classmap.size()))
+
 # Set to go : Call using --> classmap.get(<ClassID>)
 #======== End of Classification init =============
 
 sigmap = maps.SignatureMap()
 #Load gid & sid files from both SNORT and ET-Rules
-<<<<<<< HEAD
-sigmap.load_generator_map(open("/etc/snort/gen-msg.map"))
-sigmap.load_generator_map(open("/etc/snort/etrules/gen-msg.map"))
-sigmap.load_signature_map(open("/etc/snort/sid-msg.map"))
-sigmap.load_signature_map(open("/etc/snort/etrules/sid-msg.map"))
-=======
 
 sigmap.load_generator_map(open("/etc/snort/rules/gen-msg.map"))
 sigmap.load_signature_map(open("/etc/snort/rules/sid-msg.map"))
 
->>>>>>> dnif/master
 #To check how many Signature-maps is loade uncomment below line
 logging.warning("[+] No. of Signature loaded = %s " %(sigmap.size()))
 # Set to go : Call using --> classmap.get(<ClassID>)
 #======== End of Signature-map init =============
 
 #Init GEOIP data for IP details
-geo_lite_city = pygeoip.GeoIP('GeoLiteCity.dat')
-geo_ip_asn = pygeoip.GeoIP('GeoIPASNum.dat')
+geo_lite_city = pygeoip.GeoIP('/usr/local/lookups/GeoLiteCity.dat')
+geo_ip_asn = pygeoip.GeoIP('/usr/local/lookups/GeoIPASNum.dat')
 logging.warning('Loaded latest ASN and City info')
 
 nowtimedom = datetime.datetime.now()
@@ -231,8 +218,7 @@ try:
             if 'PacketData' in dt_evt:
                 dt_evt.pop('PacketData', None)
             logging.warning('%s' %dt_evt)
-            rpr = dlog.log(dt_evt)
-            print rpr
+            #rpr = dlog.log(dt_evt)
             if (datetime.datetime.now() > endtime) or (len(httplist) > 15000):
                 nowtime = datetime.datetime.now()
                 timeduration = datetime.timedelta(seconds=5)
